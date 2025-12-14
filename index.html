@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ECHO CHAMBER | Roots & Dub Session</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- 1. VARIABLES & RESET --- */
+        :root {
+            --bg-deep: #050505;
+            --bg-card: rgba(20, 20, 20, 0.6);
+            --color-gold: #ffb700;
+            --color-acid: #ccff00;
+            --color-red: #ff2a2a;
+            --text-main: #e0e0e0;
+            --text-dim: #888;
+            
+            --font-display: 'Syne', sans-serif;
+            --font-body: 'Space Grotesk', sans-serif;
+            
+            --spacer-xs: 0.5rem;
+            --spacer-md: 2rem;
+            --spacer-xl: 5rem;
+            
+            --container-width: 1400px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            cursor: none; /* Custom cursor handling */
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            font-family: var(--font-body);
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* --- 2. GRAIN TEXTURE OVERLAY --- */
+        .noise-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 900;
+            opacity: 0.05;
+            background: url('data:image/svg+xml;utf8,%3Csvg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"%3E%3Cfilter id="noiseFilter"%3E%3CfeTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/%3E%3C/filter%3E%3Crect width="100%25" height="100%25" filter="url(%23noiseFilter)"/%3E%3C/svg%3E');
+        }
+
+        /* --- 3. CUSTOM CURSOR --- */
+        .cursor-dot, .cursor-circle {
+            position: fixed;
+            top: 0;
+            left: 0;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            z-index: 9999;
+            pointer-events: none;
+        }
+
+        .cursor-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--color-acid);
+        }
+
+        .cursor-circle {
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--color-acid);
+            transition: width 0.2s, height 0.2s, background-color 0.2s;
+        }
+
+        body.hovering .cursor-circle {
+            width: 80px;
+            height: 80px;
+            background-color: rgba(204, 255, 0, 0.1);
+            border-color: transparent;
+            backdrop-filter: blur(2px);
+        }
+
+        /* --- 4. BACKGROUND CANVAS (SMOKE) --- */
+        #smokeCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.6;
+        }
+
+        /* --- 5. TYPOGRAPHY & UTILS --- */
+        h1, h2, h3 {
+            font-family: var(--font-display);
+            font-weight: 800;
+            line-height: 0.9;
+            text-transform: uppercase;
+        }
+
+        .container {
+            max-width: var(--container-width);
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 15px 30px;
+            border: 1px solid var(--color-acid);
+            color: var(--color-acid);
+            text-decoration: none;
+            font-weight: 700;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+            transition: color 0.3s;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: var(--color-acid);
+            transition: transform 0.4s cubic-bezier(0.77, 0, 0.175, 1);
+            z-index: -1;
+        }
+
+        .btn:hover {
+            color: var(--bg-deep);
+        }
+
+        .btn:hover::before {
+            transform: translateX(100%);
+        }
+
+        /* --- 6. NAVIGATION --- */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            mix-blend-mode: difference;
+        }
+
+        .logo {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            color: var(--color-acid);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 40px;
+        }
+
+        .nav-links a {
+            color: #fff;
+            text-decoration: none;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            position: relative;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--color-acid);
+            transition: width 0.3s;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .menu-toggle {
+            display: none;
+            color: #fff;
+            font-size: 1.5rem;
+        }
+
+        /* --- 7. HERO SECTION --- */
+        .hero {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+
+        .hero-content {
+            z-index: 2;
+        }
+
+        .hero h1 {
+            font-size: clamp(4rem, 15vw, 12rem); /* Fluid Typography */
+            color: transparent;
+            -webkit-text-stroke: 2px rgba(255,255,255,0.8);
+            position: relative;
+        }
+
+        .hero h1 span {
+            display: block;
+            color: var(--color-acid);
+            -webkit-text-stroke: 0;
+            transform: translateX(10vw);
+            opacity: 0;
+            animation: slideIn 1.5s cubic-bezier(0.2, 1, 0.3, 1) forwards;
+            animation-delay: 0.5s;
+        }
+
+        .hero-sub {
+            font-size: clamp(1rem, 2vw, 1.5rem);
+            max-width: 500px;
+            margin-top: 2rem;
+            color: var(--text-dim);
+            margin-left: auto;
+            text-align: right;
+        }
+
+        /* --- 8. LINEUP SECTION (Grid Asymétrique) --- */
+        .section-title {
+            font-size: clamp(3rem, 8vw, 6rem);
+            margin-bottom: var(--spacer-xl);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 20px;
+        }
+
+        .lineup {
+            padding: var(--spacer-xl) 0;
+        }
+
+        .grid-layout {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid rgba(255,255,255,0.05);
+            padding: 2rem;
+            backdrop-filter: blur(10px);
+            transition: transform 0.4s, border-color 0.4s;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 350px;
+        }
+
+        .card:hover {
+            transform: translateY(-10px) scale(1.02);
+            border-color: var(--color-acid);
+            z-index: 10;
+        }
+
+        .card h3 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .card p {
+            font-family: var(--font-body);
+            color: var(--text-dim);
+        }
+
+        .card .genre {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 0.8rem;
+            border: 1px solid var(--text-dim);
+            padding: 5px 10px;
+            border-radius: 20px;
+        }
+
+        /* Asymmetric Placement */
+        .card:nth-child(1) { grid-column: 1 / 8; }
+        .card:nth-child(2) { grid-column: 8 / 13; background: #111; }
+        .card:nth-child(3) { grid-column: 1 / 6; min-height: 450px; border-color: var(--color-red); }
+        .card:nth-child(4) { grid-column: 6 / 13; min-height: 450px; }
+
+        /* --- 9. IMMERSIVE TEXT SCROLL --- */
+        .marquee {
+            padding: var(--spacer-xl) 0;
+            overflow: hidden;
+            white-space: nowrap;
+            background: var(--color-acid);
+            color: var(--bg-deep);
+            transform: rotate(-2deg) scale(1.1);
+        }
+
+        .marquee-content {
+            display: inline-block;
+            animation: scroll 20s linear infinite;
+        }
+
+        .marquee span {
+            font-family: var(--font-display);
+            font-size: 4rem;
+            font-weight: 800;
+            margin-right: 4rem;
+        }
+
+        /* --- 10. RESPONSIVE --- */
+        @media (max-width: 1024px) {
+            .card:nth-child(n) { grid-column: span 6; }
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                position: fixed;
+                top: 0;
+                right: 0;
+                height: 100vh;
+                width: 70%;
+                background: #111;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                transform: translateX(100%);
+                transition: transform 0.4s ease;
+            }
+
+            .nav-links.active {
+                transform: translateX(0);
+            }
+
+            .menu-toggle { display: block; z-index: 101; }
+            
+            .card:nth-child(n) { grid-column: span 12; min-height: 300px; }
+            
+            .hero h1 {
+                font-size: 18vw;
+                line-height: 1;
+            }
+            
+            .hero h1 span {
+                transform: translateX(0);
+            }
+        }
+
+        /* --- ANIMATIONS --- */
+        @keyframes slideIn {
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes scroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* Footer */
+        footer {
+            padding: 50px 20px;
+            text-align: center;
+            border-top: 1px solid #222;
+            margin-top: 50px;
+        }
+
+        .sound-wave {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            height: 50px;
+            gap: 5px;
+            margin-bottom: 20px;
+        }
+
+        .bar {
+            width: 10px;
+            background: var(--color-gold);
+            animation: wave 1s infinite ease-in-out;
+        }
+        .bar:nth-child(2) { animation-delay: 0.1s; height: 60%; }
+        .bar:nth-child(3) { animation-delay: 0.2s; height: 80%; }
+        .bar:nth-child(4) { animation-delay: 0.3s; height: 40%; }
+        .bar:nth-child(5) { animation-delay: 0.4s; height: 90%; }
+
+        @keyframes wave {
+            0%, 100% { height: 20%; }
+            50% { height: 100%; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="noise-overlay"></div>
+
+    <div class="cursor-dot"></div>
+    <div class="cursor-circle"></div>
+
+    <canvas id="smokeCanvas"></canvas>
+
+    <nav>
+        <div class="logo">ECHO CHAMBER.</div>
+        <div class="menu-toggle">☰</div>
+        <div class="nav-links">
+            <a href="#lineup" class="hover-trigger">Line Up</a>
+            <a href="#tickets" class="hover-trigger">Tickets</a>
+            <a href="#info" class="hover-trigger">Info</a>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="container hero-content">
+            <h1>DIGITAL<br><span>ROOTS</span></h1>
+            <div class="hero-sub">
+                <p>BASS CULTURE REIMAGINED.<br>14.07.2025 // PARIS UNDERGROUND</p>
+                <br>
+                <a href="#tickets" class="btn hover-trigger">RÉSERVER</a>
+            </div>
+        </div>
+    </section>
+
+    <div class="marquee">
+        <div class="marquee-content">
+            <span>HEAVY BASS</span><span>SOUND SYSTEM</span><span>DUBPLATES</span><span>HYPNOTIC ECHOES</span><span>HEAVY BASS</span><span>SOUND SYSTEM</span><span>DUBPLATES</span><span>HYPNOTIC ECHOES</span>
+        </div>
+    </div>
+
+    <section class="lineup container" id="lineup">
+        <h2 class="section-title">SELECTION</h2>
+        
+        <div class="grid-layout">
+            <div class="card hover-trigger">
+                <span class="genre">DUB TECHNO</span>
+                <div>
+                    <h3>KING TUBBY<br>VIRTUAL</h3>
+                    <p>Une reconstruction holographique du maître du Dub.</p>
+                </div>
+            </div>
+
+            <div class="card hover-trigger">
+                <span class="genre">STEPPER</span>
+                <div>
+                    <h3>ZION<br>TRAIN</h3>
+                    <p>Live mixing session avec section cuivres augmentée.</p>
+                </div>
+            </div>
+
+            <div class="card hover-trigger">
+                <span class="genre">ROOTS REVIVAL</span>
+                <div>
+                    <h3>JAH<br>SHAKA</h3>
+                    <p>5 Hour heavy rotation. Spiritual vibes only.</p>
+                </div>
+            </div>
+
+            <div class="card hover-trigger">
+                <span class="genre">AMBIENT DUB</span>
+                <div>
+                    <h3>RHYTHM<br>& SOUND</h3>
+                    <p>Deep immersion, basic channel showcase.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer id="tickets">
+        <div class="sound-wave">
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+        </div>
+        <p>&copy; 2025 ECHO CHAMBER SOUND SYSTEM.</p>
+        <p style="color: var(--color-dim); font-size: 0.8rem; margin-top:10px;">FEEL THE BASS IN YOUR CHEST</p>
+    </footer>
+
+    <script>
+        // --- 1. CUSTOM CURSOR LOGIC ---
+        const cursorDot = document.querySelector('.cursor-dot');
+        const cursorCircle = document.querySelector('.cursor-circle');
+        const hoverTriggers = document.querySelectorAll('.hover-trigger');
+
+        // Smooth cursor movement
+        let mouseX = 0, mouseY = 0;
+        let cursorX = 0, cursorY = 0;
+
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            
+            // Dot moves instantly
+            cursorDot.style.left = mouseX + 'px';
+            cursorDot.style.top = mouseY + 'px';
+        });
+
+        // Circle follows with delay (Lerp)
+        function animateCursor() {
+            let distX = mouseX - cursorX;
+            let distY = mouseY - cursorY;
+            
+            cursorX += distX * 0.15;
+            cursorY += distY * 0.15;
+            
+            cursorCircle.style.left = cursorX + 'px';
+            cursorCircle.style.top = cursorY + 'px';
+            
+            requestAnimationFrame(animateCursor);
+        }
+        animateCursor();
+
+        // Hover effects
+        hoverTriggers.forEach(trigger => {
+            trigger.addEventListener('mouseenter', () => document.body.classList.add('hovering'));
+            trigger.addEventListener('mouseleave', () => document.body.classList.remove('hovering'));
+        });
+
+        // --- 2. CANVAS SMOKE EFFECT ---
+        const canvas = document.getElementById('smokeCanvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let particles = [];
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = height + Math.random() * 100;
+                this.vx = Math.random() * 1 - 0.5; // Drift left/right
+                this.vy = Math.random() * -1.5 - 0.5; // Float up
+                this.size = Math.random() * 30 + 10; // Big soft blobs
+                this.alpha = Math.random() * 0.2; // Very transparent
+                this.color = Math.random() > 0.5 ? '100, 100, 100' : '50, 205, 50'; // Grey or Greenish
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.alpha -= 0.0005; // Fade out slowly
+
+                // Reset if off screen or invisible
+                if (this.y < -50 || this.alpha <= 0) {
+                    this.x = Math.random() * width;
+                    this.y = height + 50;
+                    this.alpha = Math.random() * 0.15;
+                }
+            }
+
+            draw() {
+                ctx.beginPath();
+                // Create a soft gradient for "smoke" look
+                let gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size);
+                gradient.addColorStop(0, `rgba(${this.color}, ${this.alpha})`);
+                gradient.addColorStop(1, `rgba(${this.color}, 0)`);
+                
+                ctx.fillStyle = gradient;
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Create particles
+        for (let i = 0; i < 50; i++) {
+            particles.push(new Particle());
+        }
+
+        function animateSmoke() {
+            ctx.clearRect(0, 0, width, height);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            requestAnimationFrame(animateSmoke);
+        }
+        animateSmoke();
+
+        // --- 3. MOBILE MENU ---
+        const menuToggle = document.querySelector('.menu-toggle');
+        const navLinks = document.querySelector('.nav-links');
+
+        menuToggle.addEventListener('click', () => {
+            navLinks.classList.toggle('active');
+            menuToggle.textContent = navLinks.classList.contains('active') ? '✕' : '☰';
+        });
+
+        // Close menu on link click
+        document.querySelectorAll('.nav-links a').forEach(link => {
+            link.addEventListener('click', () => {
+                navLinks.classList.remove('active');
+                menuToggle.textContent = '☰';
+            });
+        });
+
+    </script>
+</body>
+</html>
